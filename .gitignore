@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Generated simulator output
+logs/*.jsonl
+reports/*.txt
+experiment_results/*
+!experiment_results/example/
+!experiment_results/example/README.md
+
+# Local custom maps are user-generated data.
+custom_maps/*.json
+
+# Keep screenshot instructions, but do not commit accidental captures until curated.
+docs/screenshots/*.png
+!docs/screenshots/README.md
