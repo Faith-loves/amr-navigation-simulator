@@ -2,3 +2,4 @@
 pygame
 pytest
 httpx2
+uvicorn

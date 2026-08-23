@@ -96,3 +96,16 @@ def test_step42_vercel_routes_api_to_python_entrypoint() -> None:
     api_route = next(route for route in config["routes"] if route["src"] == "/api/(.*)")
 
     assert api_route["dest"] == "/api/index.py"
+
+def test_step43_web_local_dev_scripts_proxy_api() -> None:
+    import json
+    from pathlib import Path
+
+    package = json.loads(Path("web/package.json").read_text(encoding="utf-8"))
+    next_config = Path("web/next.config.js").read_text(encoding="utf-8")
+
+    assert "dev:api" in package["scripts"]
+    assert "..\\\\.venv\\\\Scripts\\\\python.exe -m uvicorn api.index:app" in package["scripts"]["dev:api"]
+    assert "dev:full" in package["scripts"]
+    assert "/api/:path*" in next_config
+    assert "NODE_ENV !== \"development\"" in next_config

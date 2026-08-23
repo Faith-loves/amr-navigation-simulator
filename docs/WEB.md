@@ -20,7 +20,14 @@ npm install
 npm run dev
 ```
 
-Plain `npm run dev` inside `web/` starts only the frontend, so `/api/...` will return 404. For the full web app locally, run Vercel dev from the repository root after installing the Vercel CLI so the Next.js frontend and Python API are served under one origin.
+For the full local web app, use the combined dev command inside `web/`:
+
+```powershell
+cd web
+npm run dev:full
+``` 
+
+This starts the Python FastAPI server on port 8787 using the project `.venv`, and Next.js on port 3000. The Next.js dev server rewrites `/api/...` to the local Python server only in development. Production still uses same-origin Vercel routing.
 
 ## Python dependencies
 

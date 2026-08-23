@@ -3,7 +3,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:api": "..\\\\.venv\\\\Scripts\\\\python.exe -m uvicorn api.index:app --app-dir .. --host 127.0.0.1 --port 8787",
+    "dev:full": "concurrently \"npm run dev:api\" \"npm run dev\""
   },
   "dependencies": {
     "@types/node": "^26.2.0",
@@ -15,6 +17,7 @@
     "typescript": "^7.0.2"
   },
   "devDependencies": {
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "concurrently": "^9.2.1"
   }
 }

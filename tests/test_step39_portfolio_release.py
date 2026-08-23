@@ -81,7 +81,7 @@ def test_requirements_are_minimal_and_used() -> None:
 
     assert requirements == ["numpy", "fastapi", "pydantic"]
     desktop_requirements = Path("requirements-desktop.txt").read_text(encoding="utf-8").splitlines()
-    assert desktop_requirements == ["-r requirements.txt", "pygame", "pytest", "httpx2"]
+    assert desktop_requirements == ["-r requirements.txt", "pygame", "pytest", "httpx2", "uvicorn"]
 
 
 def test_demo_mode_configures_strong_default() -> None:
