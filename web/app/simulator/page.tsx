@@ -12,6 +12,8 @@ export default function SimulatorPage() {
   return <Suspense fallback={<main className="page"><section className="panel"><h1>Simulator</h1><p className="status-line">Loading simulator...</p></section></main>}><SimulatorContent /></Suspense>;
 }
 
+const GOAL_REACHED_DISTANCE = 16;
+
 function SimulatorContent() {
   const params = useSearchParams();
   const router = useRouter();
@@ -151,6 +153,10 @@ function SimulatorContent() {
         setGoalDistance(response.goal_distance);
         setLidar(response.lidar);
         setTrajectory((points) => [...points.slice(-420), { x: response.robot.x, y: response.robot.y }]);
+        if (response.goal_distance <= GOAL_REACHED_DISTANCE) {
+          setIsRunning(false);
+          setStatus("FINISHED - goal reached");
+        }
       } catch (error) {
         setApiError(error instanceof Error ? error.message : "Simulation API unavailable");
         setIsRunning(false);

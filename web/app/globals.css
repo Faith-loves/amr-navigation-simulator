@@ -82,3 +82,5 @@ a { color: inherit; text-decoration: none; }
 .run-launch { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 54px; padding: 0 20px; font-weight: 800; letter-spacing: 0; }
 .run-button { background: var(--accent) !important; border-color: var(--accent) !important; color: #06111e !important; font-weight: 800; min-width: 86px; }
 .run-button.active { background: var(--warning) !important; border-color: var(--warning) !important; }
+
+.finish-status { color: var(--accent); font-weight: 800; }
