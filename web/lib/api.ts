@@ -1,6 +1,12 @@
 import type { MissionParseResponse, PlanResponse, PlannerName, Point, RobotState, ScenarioSummary, StepResponse } from "./types";
 
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+const API_RETRY_STATUSES = new Set([500, 502, 503, 504]);
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function requestJson<T>(url: string, init?: RequestInit, attempt = 0): Promise<T> {
   const response = await fetch(url, {
     ...init,
     headers: {
@@ -10,6 +16,11 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    if (url.startsWith("/api/") && API_RETRY_STATUSES.has(response.status) && attempt < 6) {
+      await delay(500);
+      return requestJson<T>(url, init, attempt + 1);
+    }
+
     let message = `Request failed (${response.status})`;
     try {
       const body = await response.json();
@@ -17,10 +28,12 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
     } catch {
       // Keep the generic message if the server did not return JSON.
     }
-    if (response.status === 404 && url.startsWith("/api/")) {
-    throw new Error("Simulation API not found. In local development, run the full Vercel dev server from the repository root so /api routes are available.");
-  }
-  throw new Error(message);
+
+    if ((response.status === 404 || response.status === 500) && url.startsWith("/api/")) {
+      throw new Error("Simulation API is not running. Start the app with `npm run dev` from the web folder so Next.js and FastAPI run together.");
+    }
+
+    throw new Error(message);
   }
 
   return response.json() as Promise<T>;

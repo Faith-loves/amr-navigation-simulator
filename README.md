@@ -186,10 +186,10 @@ For full-stack local web development, run:
 
 ```powershell
 cd web
-npm run dev:full
+npm run dev
 ``` 
 
-This starts both the Python API using the project `.venv` and the Next.js frontend. If you run only `npm run dev`, the UI loads but `/api/...` needs a separate Python API server.
+This starts both the Python API using the project `.venv` and the Next.js frontend. Use `npm run dev:web` only for frontend-only work.
 
 For desktop usage:
 

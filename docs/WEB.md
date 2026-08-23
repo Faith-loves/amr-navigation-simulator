@@ -20,14 +20,14 @@ npm install
 npm run dev
 ```
 
-For the full local web app, use the combined dev command inside `web/`:
+For the full local web app, use the default dev command inside `web/`:
 
 ```powershell
 cd web
-npm run dev:full
+npm run dev
 ``` 
 
-This starts the Python FastAPI server on port 8787 using the project `.venv`, and Next.js on port 3000. The Next.js dev server rewrites `/api/...` to the local Python server only in development. Production still uses same-origin Vercel routing.
+This starts the Python FastAPI server on port 8787 using the project `.venv`, and Next.js on port 3000. Use `npm run dev:web` only when you intentionally want frontend-only mode. The Next.js dev server rewrites `/api/...` to the local Python server only in development. Production still uses same-origin Vercel routing.
 
 ## Python dependencies
 
