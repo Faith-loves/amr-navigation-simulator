@@ -137,3 +137,53 @@ Use `DEMO MODE` on the home screen for a strong default portfolio demo: Warehous
 - Add curated screenshots and a short demo video.
 - Add CI for the full pytest suite.
 - Expand experiment presets across more scenarios and noise levels.
+
+## Web Version (Step 41)
+
+This repository now includes a browser-based foundation alongside the desktop simulator:
+
+- web/ contains the Next.js + React + TypeScript frontend.
+- pi/index.py exposes stateless Python REST endpoints for scenarios, planning, simulation stepping, and mission parsing.
+- The original Python/Pygame desktop version remains available with python main.py.
+
+Local frontend commands:
+
+`powershell
+cd web
+npm install
+npm run dev
+npm run build
+` 
+
+See docs/WEB.md for the web architecture and API endpoint summary.
+
+
+## Web Demo
+
+Deployed URL: _pending Vercel deployment_
+
+The web version runs as a Next.js frontend with same-origin Python API routes. It does not require paid API keys or cloud AI services.
+
+## Deployment
+
+The repository is prepared for Vercel as a monorepo-style deployment:
+
+- Frontend: `web/` Next.js + React + TypeScript
+- Backend: `api/index.py` FastAPI serverless API
+- Shared robotics engine: existing Python packages such as `planning/`, `robot/`, `sensors/`, `environment/`, and `ai/`
+
+Use the repository root as the Vercel project root so both `web/` and `api/` are available. The frontend calls relative routes such as `/api/scenarios`, so it works locally and in production without hardcoded domains.
+
+For local web development:
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+For desktop usage:
+
+```powershell
+python main.py
+```

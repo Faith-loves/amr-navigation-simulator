@@ -1,0 +1,3 @@
+export default function AboutPage() {
+  return <main className="page"><section className="panel"><h1>About</h1><p>The project now supports two surfaces: the original Python/Pygame desktop simulator and a browser application powered by stateless Python API endpoints.</p><div className="scenario-grid"><div className="scenario-card"><h3>Desktop</h3><p>Python robotics engine, Pygame dashboard, logging, replay, experiments, battery, and custom map tools.</p></div><div className="scenario-card"><h3>Web</h3><p>Next.js, React, TypeScript, Canvas rendering, keyboard control, mission parsing, and Python planner API calls.</p></div></div></section></main>;
+}

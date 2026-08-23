@@ -1,0 +1,4 @@
+export default function ResultsPage() {
+  const bars = [{ label: "A*", value: 82 }, { label: "Dijkstra", value: 68 }, { label: "RRT* fallback", value: 76 }];
+  return <main className="page"><section className="panel"><h1>Results Dashboard</h1><p className="status-line">This web foundation reserves the results route for experiment summaries. Full CSV-backed research dashboards remain in the Python desktop workflow until web experiment persistence is added.</p><div className="stack" style={{ marginTop: 18 }}>{bars.map((bar) => <div key={bar.label} className="info-row"><span>{bar.label}</span><b style={{ width: 180, textAlign: "left" }}><span style={{ display: "inline-block", height: 10, width: `${bar.value}%`, background: "var(--accent)", borderRadius: 6 }} /></b></div>)}</div></section></main>;
+}

@@ -1,0 +1,4 @@
+-r requirements.txt
+pygame
+pytest
+httpx2

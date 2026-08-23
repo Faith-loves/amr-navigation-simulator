@@ -79,7 +79,9 @@ def test_screenshot_and_example_placeholders_exist() -> None:
 def test_requirements_are_minimal_and_used() -> None:
     requirements = Path("requirements.txt").read_text(encoding="utf-8").splitlines()
 
-    assert requirements == ["numpy", "pygame", "pytest"]
+    assert requirements == ["numpy", "fastapi", "pydantic"]
+    desktop_requirements = Path("requirements-desktop.txt").read_text(encoding="utf-8").splitlines()
+    assert desktop_requirements == ["-r requirements.txt", "pygame", "pytest", "httpx2"]
 
 
 def test_demo_mode_configures_strong_default() -> None:

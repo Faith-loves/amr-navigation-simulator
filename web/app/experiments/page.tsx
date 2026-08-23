@@ -1,0 +1,3 @@
+export default function ExperimentsPage() {
+  return <main className="page"><section className="panel"><h1>Experiments</h1><p className="status-line">Web experiment mode is intentionally lightweight for serverless deployment. Use the desktop Python version for large repeated experiment batches.</p><div className="scenario-grid"><div className="scenario-card"><h3>Planner Comparison</h3><p>Run small browser demo comparisons against the stateless planner API.</p><span className="badge">Web-safe</span></div><div className="scenario-card"><h3>Desktop Batch Mode</h3><p>Full repeated runs, CSV export, replay files, and research reports remain available locally.</p><span className="badge">Python desktop</span></div></div></section></main>;
+}
