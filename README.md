@@ -174,13 +174,15 @@ The repository is prepared for Vercel as a monorepo-style deployment:
 
 Use the repository root as the Vercel project root so both `web/` and `api/` are available. The frontend calls relative routes such as `/api/scenarios`, so it works locally and in production without hardcoded domains.
 
-For local web development:
+For frontend-only local development:
 
 ```powershell
 cd web
 npm install
 npm run dev
 ```
+
+For full-stack local web development, run Vercel dev from the repository root so `/api/...` routes are available. If you run only `npm run dev` inside `web/`, the UI will load but API calls will return 404.
 
 For desktop usage:
 

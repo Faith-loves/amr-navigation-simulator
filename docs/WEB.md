@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-For Vercel-style local API routing, use Vercel dev from the repository root after installing the Vercel CLI.
+Plain `npm run dev` inside `web/` starts only the frontend, so `/api/...` will return 404. For the full web app locally, run Vercel dev from the repository root after installing the Vercel CLI so the Next.js frontend and Python API are served under one origin.
 
 ## Python dependencies
 

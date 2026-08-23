@@ -13,11 +13,14 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
     let message = `Request failed (${response.status})`;
     try {
       const body = await response.json();
-      message = body.detail || message;
+      message = typeof body.detail === "string" ? body.detail : body.detail?.error || message;
     } catch {
       // Keep the generic message if the server did not return JSON.
     }
-    throw new Error(message);
+    if (response.status === 404 && url.startsWith("/api/")) {
+    throw new Error("Simulation API not found. In local development, run the full Vercel dev server from the repository root so /api routes are available.");
+  }
+  throw new Error(message);
   }
 
   return response.json() as Promise<T>;

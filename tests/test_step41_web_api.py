@@ -87,3 +87,12 @@ def test_step42_goal_endpoint_rejects_invalid_goal_cleanly() -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"]["error"] == "INVALID_GOAL"
+
+def test_step42_vercel_routes_api_to_python_entrypoint() -> None:
+    import json
+    from pathlib import Path
+
+    config = json.loads(Path("vercel.json").read_text(encoding="utf-8"))
+    api_route = next(route for route in config["routes"] if route["src"] == "/api/(.*)")
+
+    assert api_route["dest"] == "/api/index.py"
