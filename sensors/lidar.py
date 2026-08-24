@@ -1,7 +1,6 @@
 import math
+import random
 from dataclasses import dataclass
-
-import numpy as np
 
 from environment.grid_map import GridMap
 from robot.state import RobotState
@@ -61,7 +60,7 @@ class Lidar:
         if true_distance > self.max_range:
             true_distance = self.max_range
 
-        noisy_distance = true_distance + np.random.normal(0, self.noise_std)
+        noisy_distance = true_distance + random.gauss(0, self.noise_std)
         noisy_distance = max(0, min(noisy_distance, self.max_range))
 
         end_x = robot_state.x + math.cos(ray_angle) * noisy_distance
@@ -74,3 +73,5 @@ class Lidar:
             noisy_distance=noisy_distance,
             hit=hit,
         )
+
+
