@@ -1,12 +1,9 @@
 {
   "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "vitest run",
-    "dev:api": "..\\\\.venv\\\\Scripts\\\\python.exe -m uvicorn api.index:app --app-dir .. --host 127.0.0.1 --port 8787",
-    "dev:full": "npm run dev",
-    "dev:web": "next dev"
+    "test": "vitest run"
   },
   "dependencies": {
     "@types/node": "^26.2.0",
