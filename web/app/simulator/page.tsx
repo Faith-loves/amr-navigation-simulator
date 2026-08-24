@@ -17,6 +17,7 @@ const GOAL_REACHED_DISTANCE = 16;
 function SimulatorContent() {
   const params = useSearchParams();
   const router = useRouter();
+  const scenarioParam = params.get("scenario") || "open-space";
   const [scenarios, setScenarios] = useState<ScenarioSummary[]>([]);
   const [scenario, setScenario] = useState<ScenarioSummary | null>(null);
   const [robot, setRobot] = useState<RobotState | null>(null);
@@ -34,22 +35,29 @@ function SimulatorContent() {
   const [missionCommand, setMissionCommand] = useState("");
   const [mission, setMission] = useState<MissionParseResponse | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [hasFinished, setHasFinished] = useState(false);
   const keys = useRef(new Set<string>());
   const waypointIndex = useRef(0);
   const robotRef = useRef<RobotState | null>(null);
+  const routeStartRef = useRef<RobotState | null>(null);
   const planRef = useRef<PlanResponse | null>(null);
   const modeRef = useRef(mode);
   const runningRef = useRef(isRunning);
+  const finishedRef = useRef(hasFinished);
+  const finishRedirectRef = useRef(false);
 
   useEffect(() => { robotRef.current = robot; }, [robot]);
   useEffect(() => { planRef.current = plan; }, [plan]);
   useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { runningRef.current = isRunning; }, [isRunning]);
+  useEffect(() => { finishedRef.current = hasFinished; }, [hasFinished]);
 
   const loadScenario = useCallback(async (slug: string) => {
     setStatus("Loading Scenario...");
     setApiError("");
     setIsRunning(false);
+    setHasFinished(false);
+    finishRedirectRef.current = false;
     try {
       const data = await fetchScenarios();
       setScenarios(data);
@@ -57,6 +65,7 @@ function SimulatorContent() {
       const reset = await resetSimulation(selected.slug);
       setScenario(reset.scenario);
       setRobot(reset.robot);
+      routeStartRef.current = reset.robot;
       setGoal({ x: reset.scenario.goal.x, y: reset.scenario.goal.y });
       setTrajectory([{ x: reset.robot.x, y: reset.robot.y }]);
       setStatus("Ready - press RUN");
@@ -68,9 +77,11 @@ function SimulatorContent() {
 
   const requestPlan = useCallback(async (target?: Point) => {
     const activeScenario = scenario;
-    const activeRobot = robotRef.current;
+    const activeRobot = routeStartRef.current ?? robotRef.current;
     const activeGoal = target ?? goal;
     if (!activeScenario || !activeRobot || !activeGoal) return;
+    setHasFinished(false);
+    finishRedirectRef.current = false;
     setStatus("Planning route...");
     setApiError("");
     try {
@@ -78,32 +89,51 @@ function SimulatorContent() {
       setPlan(result);
       planRef.current = result;
       waypointIndex.current = 0;
-      setStatus(result.success ? "Route ready - press RUN" : "No path found");
+      setStatus(result.success ? "Route ready - press RUN" : "Plan failed - goal is unreachable");
+      return result;
     } catch (error) {
       setApiError(error instanceof Error ? error.message : "Planner failed");
       setStatus("Planner failed");
+      return null;
     }
   }, [goal, planner, scenario]);
 
   const runSimulation = useCallback(async () => {
     if (!scenario || !robotRef.current || !goal) return;
-    if (!planRef.current?.success) {
-      await requestPlan();
+    if (modeRef.current === "autonomous") {
+      const readyPlan = planRef.current?.success ? planRef.current : await requestPlan();
+      if (!readyPlan?.success) {
+        setIsRunning(false);
+        setStatus("Plan failed - choose a clear goal");
+        return;
+      }
     }
     setIsRunning(true);
     setStatus(modeRef.current === "autonomous" ? "Running autonomous navigation" : "Running manual control");
   }, [goal, requestPlan, scenario]);
 
   const restartSimulation = useCallback(async () => {
-    const slug = scenario?.slug ?? params.get("scenario") ?? "open-space";
+    const slug = scenario?.slug ?? scenarioParam;
     setPlan(null);
+    setHasFinished(false);
+    finishRedirectRef.current = false;
     planRef.current = null;
+    routeStartRef.current = null;
     waypointIndex.current = 0;
     await loadScenario(slug);
-  }, [loadScenario, params, scenario?.slug]);
+  }, [loadScenario, scenarioParam, scenario?.slug]);
 
-  useEffect(() => { void loadScenario(params.get("scenario") || "open-space"); }, [loadScenario, params]);
-  useEffect(() => { if (scenario && robot && goal) void requestPlan(); }, [scenario?.slug, planner, robot, goal, requestPlan]);
+
+  const returnHomeAfterFinish = useCallback(() => {
+    if (finishRedirectRef.current) return;
+    finishRedirectRef.current = true;
+    window.setTimeout(() => router.push("/"), 900);
+  }, [router]);
+  useEffect(() => { void loadScenario(scenarioParam); }, [loadScenario, scenarioParam]);
+  useEffect(() => {
+    if (!scenario || !robotRef.current || !goal || runningRef.current) return;
+    void requestPlan();
+  }, [scenario?.slug, planner]);
 
   useEffect(() => {
     const onDown = (event: KeyboardEvent) => {
@@ -116,13 +146,13 @@ function SimulatorContent() {
       }
       if (key === "f") {
         setMode((value) => value === "autonomous" ? "manual" : "autonomous");
-        setIsRunning(true);
+        setStatus("Mode changed - press RUN");
       }
       if (key === "e") setMode("exploration");
       if (key === "v") setLidarMode((value) => value === "off" ? "minimal" : value === "minimal" ? "full" : "off");
-      if (key === "1") setPlanner("astar");
-      if (key === "2") setPlanner("dijkstra");
-      if (key === "3") setPlanner("rrtstar");
+      if (key === "1") { setIsRunning(false); setPlanner("astar"); }
+      if (key === "2") { setIsRunning(false); setPlanner("dijkstra"); }
+      if (key === "3") { setIsRunning(false); setPlanner("rrtstar"); }
       if (key === "escape") router.push("/");
     };
     const onUp = (event: KeyboardEvent) => keys.current.delete(event.key.toLowerCase());
@@ -135,19 +165,28 @@ function SimulatorContent() {
     const interval = window.setInterval(async () => {
       const activeScenario = scenario;
       const activeRobot = robotRef.current;
-      if (!activeScenario || !activeRobot || !runningRef.current) return;
+      const activeGoal = goal;
+      if (!activeScenario || !activeRobot || !activeGoal || !runningRef.current) return;
       let control = robotControl(keys.current);
       if (modeRef.current === "autonomous") {
         const currentPlan = planRef.current;
         if (currentPlan?.success) {
           waypointIndex.current = nextWaypointIndex(activeRobot, currentPlan.path, waypointIndex.current);
+          if (waypointIndex.current >= currentPlan.path.length) {
+            setIsRunning(false);
+            setHasFinished(true);
+            keys.current.clear();
+            setStatus("FINISHED - goal reached");
+            returnHomeAfterFinish();
+            return;
+          }
           control = autonomousControl(activeRobot, currentPlan.path[waypointIndex.current]);
         } else {
           control = { v: 0, omega: 0 };
         }
       }
       try {
-        const response = await stepSimulation({ scenario: activeScenario.slug, robot: activeRobot, control, dt: 0.08, lidar: lidarMode !== "off" });
+        const response = await stepSimulation({ scenario: activeScenario.slug, robot: activeRobot, control, dt: 0.08, lidar: lidarMode !== "off", goal: activeGoal });
         setRobot(response.robot);
         setCollision(response.collision);
         setGoalDistance(response.goal_distance);
@@ -155,7 +194,10 @@ function SimulatorContent() {
         setTrajectory((points) => [...points.slice(-420), { x: response.robot.x, y: response.robot.y }]);
         if (response.goal_distance <= GOAL_REACHED_DISTANCE) {
           setIsRunning(false);
+          setHasFinished(true);
+          keys.current.clear();
           setStatus("FINISHED - goal reached");
+          returnHomeAfterFinish();
         }
       } catch (error) {
         setApiError(error instanceof Error ? error.message : "Simulation API unavailable");
@@ -163,7 +205,7 @@ function SimulatorContent() {
       }
     }, 80);
     return () => window.clearInterval(interval);
-  }, [scenario, lidarMode]);
+  }, [scenario, lidarMode, goal, returnHomeAfterFinish]);
 
   async function submitMission() {
     if (!scenario || !missionCommand.trim()) return;
@@ -171,14 +213,20 @@ function SimulatorContent() {
     try {
       const parsed = await parseMission({ scenario: scenario.slug, command: missionCommand });
       setMission(parsed);
-      const target = parsed.tasks[0]?.target_position;
+      let missionReady = false;
+      const target = goal ?? parsed.tasks[0]?.target_position;
       if (target) {
-        setGoal(target);
-        await requestPlan(target);
+        const missionPlan = await requestPlan(target);
         setMode("autonomous");
-        setIsRunning(true);
+        if (missionPlan?.success) {
+          setIsRunning(true);
+          missionReady = true;
+        } else {
+          setIsRunning(false);
+          setStatus("Plan failed - fixed goal is unreachable");
+        }
       }
-      setStatus(parsed.error || "Mission running");
+      if (parsed.error || missionReady || !target) setStatus(parsed.error || (missionReady ? "Mission running to fixed goal" : "No mission target found"));
       const history = JSON.parse(localStorage.getItem("amr-recent-missions") || "[]") as string[];
       localStorage.setItem("amr-recent-missions", JSON.stringify([missionCommand, ...history.filter((item) => item !== missionCommand)].slice(0, 5)));
     } catch (error) {
@@ -186,5 +234,21 @@ function SimulatorContent() {
     }
   }
 
-  return <><div className="mobile-warning"><h1>AMR Simulator</h1><p>AMR Simulator works best on a desktop or tablet.</p></div><main className="sim-page"><section className="sim-main"><div className="sim-header"><div><h1>{scenario?.name ?? "Simulator"}</h1><p>{status}</p></div><div className="toolbar"><select value={scenario?.slug ?? ""} onChange={(event) => void loadScenario(event.target.value)}>{scenarios.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select><button className={isRunning ? "run-button active" : "run-button"} onClick={() => isRunning ? (setIsRunning(false), setStatus("Paused - press RUN")) : void runSimulation()}>{isRunning ? "PAUSE" : "RUN"}</button><button onClick={() => void restartSimulation()}>Restart</button><button onClick={() => setMode(mode === "autonomous" ? "manual" : "autonomous")}>{mode === "autonomous" ? "Manual" : "Auto"}</button><button onClick={() => void requestPlan()}>Plan</button><button onClick={() => router.push("/")}>Home</button></div></div><SimulationCanvas scenario={scenario} robot={robot} goal={goal} path={plan?.path ?? []} trajectory={trajectory} lidar={lidar} lidarMode={lidarMode} onCanvasGoal={(point) => { setGoal(point); setIsRunning(false); void requestPlan(point); }} /></section><SidebarTabs scenario={scenario} robot={robot} planner={planner} mode={isRunning ? mode : "paused"} lidarMode={lidarMode} plan={plan} mission={mission} status={status} collision={collision} apiError={apiError} goalDistance={goalDistance} missionCommand={missionCommand} onMissionCommand={setMissionCommand} onMissionSubmit={() => void submitMission()} /></main></>;
+  return <><div className="mobile-warning"><h1>AMR Simulator</h1><p>AMR Simulator works best on a desktop or tablet.</p></div><main className="sim-page"><section className="sim-main"><div className="sim-header"><div><h1>{scenario?.name ?? "Simulator"}</h1><p>{status}</p></div><div className="toolbar"><select value={scenario?.slug ?? ""} onChange={(event) => void loadScenario(event.target.value)}>{scenarios.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select><button className={isRunning ? "run-button active" : "run-button"} onClick={() => isRunning ? (setIsRunning(false), setStatus("Paused - press RUN")) : void runSimulation()}>{isRunning ? "PAUSE" : "RUN"}</button><button onClick={() => void restartSimulation()}>Restart</button><button onClick={() => setMode(mode === "autonomous" ? "manual" : "autonomous")}>{mode === "autonomous" ? "Manual" : "Auto"}</button><button onClick={() => { setIsRunning(false); void requestPlan(); }}>Plan</button><button onClick={() => router.push("/")}>Home</button></div></div><SimulationCanvas scenario={scenario} robot={robot} goal={goal} path={plan?.path ?? []} trajectory={trajectory} lidar={lidar} lidarMode={lidarMode} onCanvasGoal={() => setStatus("Target is fixed for this scenario")} /></section><SidebarTabs scenario={scenario} robot={robot} planner={planner} mode={isRunning ? mode : "paused"} lidarMode={lidarMode} plan={plan} mission={mission} status={status} collision={collision} apiError={apiError} goalDistance={goalDistance} missionCommand={missionCommand} onMissionCommand={setMissionCommand} onMissionSubmit={() => void submitMission()} /></main></>;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

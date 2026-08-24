@@ -95,11 +95,19 @@ export default function SimulationCanvas({ scenario, robot, goal, path, trajecto
       className="simulation-canvas"
       onClick={(event) => {
         if (!scenario || !onCanvasGoal) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        const scale = Math.min((event.currentTarget.width - 32) / scenario.width, (event.currentTarget.height - 32) / scenario.height);
-        const offsetX = (event.currentTarget.width - scenario.width * scale) / 2;
-        const offsetY = (event.currentTarget.height - scenario.height * scale) / 2;
-        onCanvasGoal({ x: (event.clientX - rect.left - offsetX) / scale, y: (event.clientY - rect.top - offsetY) / scale });
+        const canvas = event.currentTarget;
+        const rect = canvas.getBoundingClientRect();
+        const displayScaleX = canvas.width / rect.width;
+        const displayScaleY = canvas.height / rect.height;
+        const canvasX = (event.clientX - rect.left) * displayScaleX;
+        const canvasY = (event.clientY - rect.top) * displayScaleY;
+        const scale = Math.min((canvas.width - 32) / scenario.width, (canvas.height - 32) / scenario.height);
+        const offsetX = (canvas.width - scenario.width * scale) / 2;
+        const offsetY = (canvas.height - scenario.height * scale) / 2;
+        const x = (canvasX - offsetX) / scale;
+        const y = (canvasY - offsetY) / scale;
+        if (x < 0 || y < 0 || x > scenario.width || y > scenario.height) return;
+        onCanvasGoal({ x, y });
       }}
     />
   );

@@ -33,6 +33,11 @@ class RobotPayload(BaseModel):
     theta: float = 0.0
 
 
+class PointPayload(BaseModel):
+    x: float
+    y: float
+
+
 class ControlPayload(BaseModel):
     v: float = 0.0
     omega: float = 0.0
@@ -44,6 +49,7 @@ class SimulationStepRequest(BaseModel):
     dt: float = Field(default=0.05, ge=0.0, le=0.25)
     scenario: str = "Open Space"
     lidar: bool = True
+    goal: PointPayload | tuple[float, float] | None = None
 
 
 class SimulationResetRequest(BaseModel):
@@ -52,14 +58,14 @@ class SimulationResetRequest(BaseModel):
 
 class GoalRequest(BaseModel):
     scenario: str = "Open Space"
-    goal: tuple[float, float]
+    goal: PointPayload | tuple[float, float]
 
 
 class PlannerRequest(BaseModel):
     planner: Literal["astar", "dijkstra", "rrtstar", "A*", "Dijkstra", "RRT*"] = "astar"
     scenario: str = "Open Space"
-    start: tuple[float, float]
-    goal: tuple[float, float]
+    start: PointPayload | tuple[float, float]
+    goal: PointPayload | tuple[float, float]
 
 
 class MissionParseRequest(BaseModel):
@@ -83,8 +89,11 @@ def _scenario_for(value: str) -> Scenario:
     raise HTTPException(status_code=404, detail=f"Unknown scenario: {value}")
 
 
-def _cell_from_xy(point: tuple[float, float], cell_size: int = CELL_SIZE) -> tuple[int, int]:
-    x, y = point
+def _cell_from_xy(point: PointPayload | tuple[float, float], cell_size: int = CELL_SIZE) -> tuple[int, int]:
+    if isinstance(point, PointPayload):
+        x, y = point.x, point.y
+    else:
+        x, y = point
     return int(y // cell_size), int(x // cell_size)
 
 
@@ -202,8 +211,14 @@ def simulation_step(request: SimulationStepRequest) -> dict[str, object]:
             for ray in lidar.scan(robot, grid_map)
         ]
 
-    goal_dx = scenario.goal_x - robot.x
-    goal_dy = scenario.goal_y - robot.y
+    if isinstance(request.goal, PointPayload):
+        target_x, target_y = request.goal.x, request.goal.y
+    elif request.goal:
+        target_x, target_y = request.goal
+    else:
+        target_x, target_y = scenario.goal_x, scenario.goal_y
+    goal_dx = target_x - robot.x
+    goal_dy = target_y - robot.y
     return {
         "robot": _serialise_robot(robot),
         "collision": collision,
@@ -287,3 +302,8 @@ def mission_parse(request: MissionParseRequest) -> dict[str, object]:
         "error": parsed.error_message,
         "tasks": tasks,
     }
+
+
+
+
+

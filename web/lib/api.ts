@@ -54,6 +54,7 @@ export async function stepSimulation(input: {
   control: { v: number; omega: number };
   dt: number;
   lidar: boolean;
+  goal?: Point;
 }): Promise<StepResponse> {
   return requestJson("/api/simulation/step", { method: "POST", body: JSON.stringify(input) });
 }
